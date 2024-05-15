@@ -47,8 +47,84 @@ class EnglishFrequecies:
             self.letters.items(), key=lambda x: x[1], reverse=True))
 
         self.digram = {
-
+            'AL':	0.93,
+            'AN':	2.17,
+            'AR':	1.06,
+            'AS':	1.09,
+            'AT':	1.17,
+            'EA':	0.84,
+            'ED':	1.29,
+            'EN':	1.37,
+            'ER':	2.11,
+            'ES':	1.00,
+            'HA':	1.17,
+            'HE':	3.65,
+            'HI':	1.07,
+            'IN':	2.10,
+            'IS':	0.99,
+            'IT':	1.24,
+            'LE':	0.95,
+            'ME':	0.83,
+            'ND':	1.62,
+            'NE':	0.75,
+            'NG':	0.99,
+            'NT':	0.77,
+            'ON':	1.36,
+            'OR':	1.09,
+            'OU':	1.41,
+            'RE':	1.64,
+            'SE':	0.85,
+            'ST':	0.96,
+            'TE':	1.00,
+            'TH':	3.99,
+            'TI':	0.92,
+            'TO':	1.24,
+            'VE':	1.11,
+            'WA':	0.84,
+            'WE':	0.87,
         }
+        self.digram_sorted = dict(
+            sorted(self.digram.items(), key=lambda x: x[1], reverse=True))
+
+        self.trigram = {
+            'ALL':	0.45,
+            'AND':	1.70,
+            'ARE':	0.33,
+            'BUT':	0.30,
+            'ENT':	0.48,
+            'ERA':	0.33,
+            'ERE':	0.47,
+            'EVE':	0.43,
+            'FOR':	0.56,
+            'HAD':	0.35,
+            'HAT':	0.58,
+            'HEN':	0.35,
+            'HER':	0.73,
+            'HIN':	0.33,
+            'HIS':	0.49,
+            'ING':	1.06,
+            'ION':	0.47,
+            'ITH':	0.47,
+            'NOT':	0.56,
+            'OME':	0.31,
+            'OUL':	0.41,
+            'OUR':	0.33,
+            'SHO':	0.33,
+            'TED':	0.32,
+            'TER':	0.36,
+            'THA':	0.54,
+            'THE':	3.67,
+            'THI':	0.55,
+            'TIO':	0.37,
+            'ULD':	0.40,
+            'VER':	0.69,
+            'WAS':	0.66,
+            'WIT':	0.46,
+            'YOU':	0.72,
+        }
+
+        self.trigram_sorted = dict(
+            sorted(self.trigram.items(), key=lambda x: x[1], reverse=True))
 
 
 class RussianFrequencies:
@@ -196,7 +272,7 @@ class GetFrequencies():
         # Удаляем знаки препинания и пробелы из сообщения
         message = ''.join(
             char for char in message if char not in string.punctuation + ' ')
-        return Counter(message).most_common(30)
+        return dict(Counter(message).most_common(30))
 
     def get_freqs_percentage(self, message):
         # Удаляем знаки препинания и пробелы из сообщения
@@ -206,7 +282,7 @@ class GetFrequencies():
         total_elements = sum(count for _, count in freqs)
         freqs_with_percentage = [
             (char, round(count / total_elements * 100, 3)) for char, count in freqs]
-        return freqs_with_percentage
+        return dict(freqs_with_percentage)
 
     def get_digram(self, message, syllable_length=2):
         syllables = []
@@ -231,6 +307,6 @@ class GetFrequencies():
         counter = Counter(syllables)
         total_syllables = sum(counter.values())
         # Вычисляем процент повторений для каждой пары букв
-        digram_with_percentage = {key.replace(' ', ''): round(value / total_syllables * 100, 3)
+        digram_with_percentage = {key.replace(' ', ''): round(value / total_syllables * 100, 2)
                                   for key, value in counter.items() if len(key.strip()) == syllable_length}
         return dict(sorted(digram_with_percentage.items(), key=lambda x: x[1], reverse=True))
