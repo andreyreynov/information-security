@@ -14,6 +14,8 @@ letter_1 = letters[0][0]
 letter_2 = letters[1][0]
 letter_3 = letters[2][0]
 
+print(letters)
+
 print(f"\nMost frequent letter in \033[4m{
       'message'}\033[0m: {letter_1, letter_2, letter_3}")
 
@@ -68,4 +70,26 @@ def show_plot(plot1, title1, plot2, title2):
 
 
 show_plot(pairs, 'Top 10 pairs', top_pairs, 'Dictionary Top 10 pairs')
+assert 0
+
 show_plot(letters, 'Top 10 letters', top_letters, 'Dictionary Top 10 letters')
+
+test_letter_1 = letter_1
+test_letter_2 = letter_top_1
+
+
+def replace_letter(input_string, letter_x, letter_y):
+    return input_string.replace(letter_x, letter_y)
+
+
+# message = replace_letter(message, test_letter_1, test_letter_2)
+# print(message)
+
+def check_letter_shift(letter1, letter2):
+    alphabet = 'abcdefghijklmnopqrstuvwxyz'
+    alphabet = alphabet.upper()
+    shift = alphabet.index(letter2) - alphabet.index(letter1)
+    return shift
+
+
+print(check_letter_shift(test_letter_1, test_letter_2))

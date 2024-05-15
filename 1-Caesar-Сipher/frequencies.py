@@ -281,7 +281,7 @@ class GetFrequencies():
         freqs = Counter(message).most_common(30)
         total_elements = sum(count for _, count in freqs)
         freqs_with_percentage = [
-            (char, round(count / total_elements * 100, 3)) for char, count in freqs]
+            (char, round(count / total_elements * 100, 2)) for char, count in freqs]
         return dict(freqs_with_percentage)
 
     def get_digram(self, message, syllable_length=2):
