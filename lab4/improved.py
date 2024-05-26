@@ -9,7 +9,7 @@ import sklearn.metrics as metrics
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.linear_model import LinearRegression
@@ -21,20 +21,21 @@ warnings.filterwarnings('ignore')
 url = 'https://raw.githubusercontent.com/jenfly/opsd/master/opsd_germany_daily.csv'
 data = pd.read_csv(url, sep=",")
 
-# Дополняем время к колонке Date, т.к. он видимо ожидает данные в формате YYYY-MM-DD HH:MM:SS
+# Дополняем время к колонке Date для получения формата YYYY-MM-DD HH:MM:SS
 data['Date'] = pd.to_datetime(data['Date'] + ' 01:00:00')
 data.set_index('Date', inplace=True)
 
 
 def pair_plot(data=data):
     # Построение попарного графика
-    sns.pairplot(data=data)
+    sns.pairplot(data)
     plt.show()
 
 
 def line_plot(data=data):
     # Построение линейного графика потребления
-    sns.lineplot(data=data['Consumption'])
+    sns.lineplot(data['Consumption'])
+    plt.title('Линейный график потребления')
     plt.show()
 
 
@@ -42,6 +43,7 @@ def autocor_plot(data=data):
     # Построение автокорреляционного графика
     plt.figure(figsize=(11, 4), dpi=80)
     pd.plotting.autocorrelation_plot(data['2012-01':'2013-01']['Consumption'])
+    plt.title('Автокорреляционный график потребления')
     plt.show()
 
 
@@ -69,6 +71,8 @@ def regression_models_comparison(data=data):
     models.append(('Модель KNN', KNeighborsRegressor()))
     models.append(('Модель RF', RandomForestRegressor(n_estimators=50)))
     models.append(('Модель SVR', SVR(gamma='auto', kernel='rbf')))
+    # New models
+    models.append(('Модель GB', GradientBoostingRegressor(n_estimators=50)))
     results = []
     names = []
 
@@ -309,3 +313,108 @@ def evaluate_time_series_models():
         ax.set_xlabel('Year')
         ax.set_ylabel('Consumption (GWh)')
         plt.show()
+
+# 3 - Предсказание на 1 год
+
+
+def predict_electricity_consumption(data=data):
+    # Изменение данных
+    data_consumption = data[['Consumption']].copy()
+    data_consumption.loc[:, 'Yesterday'] = data_consumption.loc[:,
+                                                                'Consumption'].shift()
+    data_consumption.loc[:,
+                         'Yesterday_Diff'] = data_consumption.loc[:, 'Yesterday'].diff()
+    data_consumption = data_consumption.dropna()
+
+    # Разделение данных на обучающую и тестовую выборки
+    X_train = data_consumption.loc[:'2016'].drop(['Consumption'], axis=1)
+    y_train = data_consumption.loc[:'2016', 'Consumption']
+    X_test = data_consumption.loc['2017'].drop(['Consumption'], axis=1)
+
+    # Обучение модели
+    model = GradientBoostingRegressor(n_estimators=50)
+    model.fit(X_train, y_train)
+
+    # Предсказание на 2017 год
+    y_pred = model.predict(X_test)
+
+    # Загрузка фактических данных потребления электроэнергии на 2017 год из датафрейма
+    y_actual = data.loc['2017', 'Consumption']
+
+    # Вывод графика сравнения предсказанного и фактического потребления
+    plt.figure(figsize=(14, 6))
+    plt.plot(y_actual.index, y_actual.values,
+             label='Фактическое потребление', color='blue')
+    plt.plot(X_test.index, y_pred,
+             label='Предсказанное потребление', color='red')
+    plt.title(
+        'Сравнение фактического и предсказанного потребления электроэнергии на 2017 год')
+    plt.xlabel('Дата')
+    plt.ylabel('Потребление электроэнергии (GWh)')
+    plt.legend()
+    plt.show()
+
+# 2 - Изменение размера тренировочных данных
+
+
+def months_periods(data=data, model=LinearRegression()):
+
+    # Изменение данных
+    data_consumption = data[['Consumption']].copy()
+    data_consumption.loc[:, 'Yesterday'] = data_consumption.loc[:,
+                                                                'Consumption'].shift()
+    data_consumption.loc[:,
+                         'Yesterday_Diff'] = data_consumption.loc[:, 'Yesterday'].diff()
+    data_consumption = data_consumption.dropna()
+
+    # Инициализация списков для хранения результатов
+    r2_scores = []
+    mae_scores = []
+    mse_scores = []
+    rmse_scores = []
+
+    # Цикл тренировки от 1 до 12 месяцев
+    for period in range(1, 13):
+        # Определение тренировочных и тестовых данных
+        X_train = data_consumption[:f'2016-{period:02d}'].drop(
+            ['Consumption'], axis=1)
+        y_train = data_consumption.loc[:f'2016-{period:02d}', 'Consumption']
+        X_test = data_consumption['2017-01':'2017-12'].drop(
+            ['Consumption'], axis=1)
+        y_test = data_consumption.loc['2017-01':'2017-12', 'Consumption']
+
+        # Обучение модели
+        model.fit(X_train, y_train)
+
+        # Предсказание на тестовых данных
+        y_pred = model.predict(X_test)
+
+        # Рассчет метрик
+        r2 = metrics.r2_score(y_test, y_pred)
+        mae = metrics.mean_absolute_error(y_test, y_pred)
+        mse = metrics.mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+
+        # Сохранение метрик
+        r2_scores.append(r2)
+        mae_scores.append(mae)
+        mse_scores.append(mse)
+        rmse_scores.append(rmse)
+
+    def plot_result(r2_scores, mae_scores, mse_scores, rmse_scores):
+        metrics = {'R2': r2_scores, 'MAE': mae_scores,
+                   'MSE': mse_scores, 'RMSE': rmse_scores}
+        for metric, scores in metrics.items():
+            plt.figure(figsize=(10, 6))
+            plt.title(f'Зависимость метрик от размера тренировочных данных для модели {
+                type(model).__name__}')
+            plt.xlabel('Размер тренировочных данных (месяцев)')
+            plt.ylabel(f'Метрика {metric}')
+            plt.plot(range(1, 13), scores, label=metric)
+            plt.legend()
+            plt.show()
+
+    plot_result(r2_scores, mae_scores, mse_scores, rmse_scores)
+
+
+months_periods(data, RandomForestRegressor())
